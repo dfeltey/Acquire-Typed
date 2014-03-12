@@ -1,0 +1,97 @@
+#lang typed/racket
+
+;; Typed wrapper for untyped portions of Acquire
+
+(require/typed/provide "Lib/log.rkt"
+                       [log ((List Any Any) Any -> Any)])
+
+(require/typed/provide "basics.rkt"
+                       [#:opaque Shares shares?] 
+                       [#:opaque Hotel hotel?]
+                       [#:opaque Cash cash?]
+                       [#:opaque Shares-Order shares-order?]
+                       [shares-available? (Shares Shares-Order -> Boolean)])
+
+
+
+(require/typed/provide "board.rkt" 
+                       [#:opaque Tile tile?]
+                       [#:opaque Board board?]
+                       [STARTER-TILES# Natural]
+                       [ALL-TILES (Listof Tile)]
+                       [FOUNDING Symbol]
+                       [MERGING Symbol]
+                       [IMPOSSIBLE Symbol]
+                       [affordable? (Board Shares-Order Cash -> Boolean)]
+                       [what-kind-of-spot (Board Tile -> Symbol)]
+                       [merging-which (Board Tile -> (Values (Listof Hotel) (Listof Hotel)))]
+                       )
+
+(require/typed/provide "state.rkt"
+                       [#:opaque State state?]
+                       [state-board (State -> Board)]
+                       [#:opaque Player player?]
+                       [state-score (State -> Score)]
+                       [state0 (Player * -> State)]
+                       [player0 (case-> (String Tile Tile Tile Tile Tile Tile -> Player)
+                                        (String Tile Tile Tile Tile Tile Tile Any -> Player))]
+                       [state-eliminate (State (Listof Player) -> State)]
+                       [player-name (Player -> String)]
+                       [player-external (Player -> Any)]
+                       [state-remove-current-player (State -> State)]
+                       [state-players (State -> (Listof Player))]
+                       [state-return-shares (case-> (State (Listof (List Player (Listof (List Hotel Boolean)))) -> State)
+                                                    (State (Listof (List Player (Listof (List Hotel Boolean)))) Board -> State))]
+                       [state-buy-shares (State Shares-Order -> State)]
+                       [state-tiles (State -> (Listof Tile))]
+                       [state-next-turn (State -> State)]
+                       [state-move-tile (State Tile -> State)]
+                       [player-money (Player -> Cash)]
+                       [state-current-player (State -> Player)]
+                       [state-shares (State -> Shares)]
+                       [state-final? (State -> Boolean)]
+                       [state-hotels (State -> (Listof Hotel))]
+                       [player-tiles (Player -> (Listof Tile))]
+                       [state-place-tile (case-> (State Tile -> State)
+                                                 (State Tile Hotel -> State))]
+                       )
+
+
+(require/typed "Lib/sandbox.rkt"
+                       [(in-sandbox in-sandbox-3) 
+                                   ((-> (Values (Option Tile) (Option Hotel) Shares-Order))
+                                    ((Listof Any) -> Any) 
+                                    ((List Any Any) -> (Values Symbol Any (Listof State)))
+                                    [#:time Natural] [#:mb-limit Natural] 
+                                    -> (Values Symbol Any (Listof State)))]
+                       [(in-sandbox in-sandbox-1) 
+                        ((-> (Values Symbol Any (Listof State))) (Any -> Any) (Any -> Any) [#:time Natural] [#:mb-limit Natural] -> Any) 
+                        ]
+                       [in-sandbox 
+                        ((-> Any) (Any -> Any) (Any -> Any) [#:time Natural] [#:mb-limit Natural] -> Any) 
+                        ])
+
+
+(provide in-sandbox-3 in-sandbox-1 in-sandbox)
+
+
+(provide Score Turn-Player% Turn-Administrator% Strategy)
+(define-type Score (Listof (List String Cash)))
+
+(define-type Turn-Administrator%
+  (Class
+   [eliminated (-> (Listof Player))]
+   [place-called (-> Boolean)]
+   [decisions (-> (Values Tile Hotel (Listof (List Player (Listof (List Hotel Boolean))))))]))
+
+(define-type Turn-Player%
+  (Class #:implements Turn-Administrator%
+   (init-field [current-state State])
+   (field [board Board]
+          [current Player]
+          [shares Shares]
+          [hotels (Listof Hotel)])
+   [reconcile-shares (Shares -> Any)]
+   [place (Tile Hotel -> (Listof Player))]))
+(define-type Strategy ((Instance Turn-Player%) -> (Values (Option Tile) (Option Hotel) (Listof Hotel))))
+

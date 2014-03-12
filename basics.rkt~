@@ -22,7 +22,7 @@
  cash? CASH0 string->cash cash->string
  price-per-share 
  bonus)
-(provide shares-order?)
+
 ;; ---------------------------------------------------------------------------------------------------
 (require "Lib/xml.rkt" "Lib/auxiliaries.rkt" (only-in srfi/1 list-index))
 
@@ -84,8 +84,6 @@
 ;; should come from Lib/auxiliaries eventually
 (define (all-equal? l) (or (empty? l) (andmap (curry equal? (first l)) (rest l))))
 (define shares-order/c (and/c (listof hotel?) all-equal? (compose (<=/c SHARES-PER-TURN#) length)))
-
-(define shares-order? (flat-contract-predicate shares-order/c))
 
 (define player-shares0 (for/fold ((s (hash))) ((h ALL-HOTELS)) (hash-set s h 0)))
 
@@ -168,7 +166,7 @@
 
 (define CASH0 8000)
 
-(define cash? exact-nonnegative-integer? #;natural-number/c)
+(define cash? natural-number/c)
 
 (define (string->cash s)
   (define n (string->number s))

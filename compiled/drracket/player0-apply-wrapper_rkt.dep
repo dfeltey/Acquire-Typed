@@ -1,0 +1,1 @@
+("5.90.0.10" ("7a8619b1015e15fefc81cd6b4cf06fcc832096dc" . "b1a9b59f42f266cac6ee8c970c24c212847a23f3") #"/home/dan/research/Acquire-Typed/state.rkt" (collects #"racket" #"runtime-config.rkt") (collects #"racket" #"main.rkt"))

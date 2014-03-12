@@ -13,13 +13,51 @@
  tree-state tree-next
  tree-founding tree-merging)
 
-(provide ATree% LPlaced% Decisions)
-
 ;; ---------------------------------------------------------------------------------------------------
 ;; IMPLEMENTATION
 
 #;(require #;"board.rkt" #;"state.rkt" #;"basics.rkt" "Lib/auxiliaries.rkt")
-(require "typed-wrapper.rkt")
+
+(require/typed "basics.rkt"
+               [#:opaque Shares shares?] 
+               [#:opaque Hotel hotel?]
+               [#:opaque Cash cash?]
+               [#:opaque Shares-Order shares-order?]
+               [shares-available? (Shares Shares-Order -> Boolean)])
+
+(require/typed "board.rkt" 
+               [#:opaque Tile tile?]
+               [#:opaque Board board?]
+               [FOUNDING Symbol]
+               [MERGING Symbol]
+               [IMPOSSIBLE Symbol]
+               [affordable? (Board Shares-Order Cash -> Boolean)]
+               [what-kind-of-spot (Board Tile -> Symbol)]
+               [merging-which (Board Tile -> (Values (Listof Hotel) (Listof Hotel)))]
+               )
+
+(require/typed "state.rkt"
+               [#:opaque State state?]
+               [state-board (State -> Board)]
+               [#:opaque Player player?]
+               [state-players (State -> (Listof Player))]
+               [state-return-shares (case-> (State (Listof (List Player (Listof (List Hotel Boolean)))) -> State)
+                                            (State (Listof (List Player (Listof (List Hotel Boolean)))) Board -> State))]
+               [state-buy-shares (State Shares-Order -> State)]
+               [state-tiles (State -> (Listof Tile))]
+               [state-next-turn (State -> State)]
+               [state-move-tile (State Tile -> State)]
+               [player-money (Player -> Cash)]
+               [state-current-player (State -> Player)]
+               [state-shares (State -> Shares)]
+               [state-final? (State -> Boolean)]
+               [state-hotels (State -> (Listof Hotel))]
+               [player-tiles (Player -> (Listof Tile))]
+               [state-place-tile (case-> (State Tile -> State)
+                                         (State Tile Hotel -> State))]
+               )
+              
+
 (define-type Policies (Listof Shares-Order))
 
 #;(module+ test (require rackunit (submod "board.rkt" tiles+spots)))

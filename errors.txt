@@ -1,0 +1,20 @@
+tree.rkt:162:2: Type Checker: Recursive Type Alias Reference
+  in: (Class #:implements ATree% #:implements Tree<%> (init-field (state State)))
+  context...:
+   temp1792
+   temp1814
+   /home/dan/Racket/DEV/racket/racket/collects/racket/private/map.rkt:21:13: map
+   temp1806
+   fail-handler3240
+   success
+   fail-handler1949
+   /home/dan/Racket/DEV/racket/pkgs/typed-racket-pkgs/typed-racket-lib/typed-racket/env/type-alias-env.rkt:44:0: resolve-type-alias
+   temp1792
+   temp1814
+   success
+   success
+   fail-handler1949
+   /home/dan/Racket/DEV/racket/pkgs/typed-racket-pkgs/typed-racket-lib/typed-racket/env/type-alias-env.rkt:44:0: resolve-type-alias
+   temp1792
+   /home/dan/Racket/DEV/racket/pkgs/typed-racket-pkgs/typed-racket-lib/typed-racket/private/parse-type.rkt:566:0: merge-with-parent-type...
+

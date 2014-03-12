@@ -1,4 +1,4 @@
-#lang typed/racket 
+#lang racket 
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; basic remote connectivity functionality, including a base class for remote proxy classes 
@@ -17,69 +17,42 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; IMPLEMENTATION
 
-(require "admin.rkt" 
-         (except-in "basics.rkt" hotel? shares-order? cash?) 
-         (except-in "board.rkt" tile? board? xtile? tile->xexpr) 
-         (except-in "state.rkt" state? player? xstate? state->xexpr) 
-         "Lib/io.rkt" "Lib/log.rkt" "Lib/xml.rkt")
+(require "admin.rkt" "basics.rkt" "board.rkt" "state.rkt" "Lib/io.rkt" "Lib/log.rkt" "Lib/xml.rkt")
 
-;; Need to move all this to a generic wrapper sort of thing...
-;; To handle it cleanly for requires among different files
-(require/typed xml 
-               [#:opaque XExpr xexpr?])
-(require/typed "board.rkt"
-               [#:opaque Tile tile?]
-               [#:opaque Board board?]
-               [#:opaque XTile xtile?]
-               [tile->xexpr (Tile -> XTile)])
-(require/typed "state.rkt"
-               [#:opaque State state?]
-               [#:opaque Player player?]
-               [#:opaque XState xstate?]
-               [state->xexpr (State -> XState)])
-(require/typed "basics.rkt"
-               [#:opaque Hotel hotel?]
-               [#:opaque Shares-Order shares-order?]
-               [#:opaque Cash cash?])
-
-(define-type (Parser p) (Any -> (Option p)))
-(define-type Score (Listof (List String Cash)))
-
-#;(module+ test 
+(module+ test 
   (require rackunit (submod "board.rkt" tiles+spots) (submod "state.rkt" sample-states)))
 
 ;; ---------------------------------------------------------------------------------------------------
-(: signup-parser (Parser String))
+
 (define signup-parser 
   (xml-parser (signup ((name values)) #:action name)))
 
 (define (signup-writer name)
   `(signup ((name ,name))))
 
-#;(module+ test 
+(module+ test 
   (check-equal? (signup-parser (signup-writer "Hello")) "Hello"))
 
 ;; ---------------------------------------------------------------------------------------------------
-(: void-parser (Parser Any))
+
 (define void-parser
   (xml-parser (void () #:action (void))))
 
 (define (void-writer)
   `(void ()))
 
-#;(module+ test
+(module+ test
   (check-equal? (void-parser (void-writer)) (void)))
 
 ;; ---------------------------------------------------------------------------------------------------
-(: tile-writer (Tile -> XTile))
+
 (define (tile-writer t)
   (tile->xexpr t))
 
-(: tile-parser (Parser Tile))
 (define tile-parser 
   (xml-parser (tile ((column string->column) (row string->row)) #:action (tile column row))))
 
-#;(module+ test
+(module+ test
   (check-equal? (tile-parser (tile-writer H11)) H11))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -88,12 +61,11 @@
   (define s (state->xexpr (get-field current-state t)))
   (list* 'turn '() (rest (rest s))))
 
-(: turn-parser (Parser State))
 (define turn-parser
   (xml-parser
    (turn () (b board-parser) (p player-parser) ... #:action (*create-state b p))))
 
-#;(module+ test 
+(module+ test 
   (define t0 (new turn% [current-state s0]))
   (check-equal? (turn-parser (turn-writer t0)) s0)
   
@@ -105,33 +77,28 @@
 (define (state-writer s)
   (state->xexpr s))
 
-(: state-parser (Parser State))
 (define state-parser 
   (xml-parser (state () (b board-parser) (p player-parser) ... #:action (*create-state b p))))
 
-(: board-parser (Parser Board))
 (define board-parser
   (xml-parser
    (board () (t tile-parser) ... (h boardhotel-parser) ... #:action (*create-board-with-hotels t h))))
 
-(: player-parser (Parser Player))
 (define player-parser
   (xml-parser
    (player ((name values) (cash string->cash)) (s share-p) ... (t tile-parser) ...
            #:action (*create-player name cash (*combine-shares s) t))))
 
-(: boardhotel-parser (Parser Hotel))
 (define boardhotel-parser 
   (xml-parser
    (hotel ((name string->hotel)) (t1 tile-parser) (t2 tile-parser) (t tile-parser) ... 
           #:action (list* name t1 t2 t))))
 
-(: share-p (Parser Any))
 (define share-p
   (xml-parser
    (share ((name string->hotel) (count string->count)) #:action (*create-shares name count))))
 
-#;(module+ test 
+(module+ test 
   (define a-player (first (state-players s0)))
   (check-equal? (player-parser (player->xexpr a-player)) a-player)
   
@@ -171,7 +138,6 @@
 (define (order-writer loh)
   `(order () ,@(map xhotel-writer loh)))
 
-(: order-parser (Parser Shares-Order))
 (define order-parser
   (xml-parser (order () (xhotel xhotel-parser) ... 
                      #:action 
@@ -182,11 +148,10 @@
 (define (xhotel-writer h)
   (hotel->xexpr h))
 
-(: xhotel-parser (Parser Any))
 (define xhotel-parser
   (xml-parser (hotel ((label string->hotel)) #:action label)))
 
-#;(module+ test
+(module+ test
   (check-equal? (xhotel-parser (xhotel-writer AMERICAN)) AMERICAN)
   
   (check-equal? (order-parser (order-writer `())) `())
@@ -205,7 +170,6 @@
 (define (keeps-writer loh)
   `(keep () ,@(map xhotel-writer loh)))
 
-(: keeps-parser (Parser Any))
 (define keeps-parser 
   (xml-parser (keep () (xhotel xhotel-parser) ... 
                     #:action 
@@ -213,7 +177,7 @@
                         xhotel
                         (error 'keeps "protocol violation (wrong # of acquired hotels): ~e" xhotel)))))
 
-#;(module+ test
+(module+ test
   (check-equal? (keeps-parser (keeps-writer `(,AMERICAN))) `(,AMERICAN))
   (check-equal? (keeps-parser (keeps-writer `(,AMERICAN ,TOWER))) `(,AMERICAN ,TOWER))
   (check-equal?
@@ -224,7 +188,6 @@
 (define (booleans-writer lob)
   `(keep () ,@(map boolean-writer lob)))
 
-(: booleans-parser (Parser (Listof Boolean)))
 (define booleans-parser 
   (xml-parser (keep () (b boolean-parser) ... #:action (map (lambda (x) (if (symbol? x) #f #t)) b))))
 
@@ -236,7 +199,7 @@
    (true () #:action #t) ;; parsing false as #f would fail in booleans-parser
    (false () #:action 'false)))
 
-#;(module+ test
+(module+ test
   (check-equal? (booleans-parser (booleans-writer '(#t #t #f))) '(#t #t #f)))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -244,11 +207,10 @@
 (define (players-writer lop)
   `(players () ,@(map player->xexpr lop)))
 
-(: players-parser (Parser (Listof Player)))
 (define players-parser
   (xml-parser (players () (p player-parser) ... #:action p)))
 
-#;(module+ test 
+(module+ test 
   (define p0 (state-players s0))
   (check-equal? (players-parser (players-writer p0)) p0)
   
@@ -261,7 +223,6 @@
 (define (end-writer sc st)
   `(score () ,@(map result-writer sc) ,(state-writer st)))
 
-(: end-parser (Parser (Pairof State Score)))
 (define end-parser 
   (xml-parser 
    (score () (result result-parser) ... (state state-parser) #:action (cons state result))))
@@ -269,11 +230,10 @@
 (define (result-writer r)
   `(result ((name ,(first r)) (score ,(cash->string (second r))))))
 
-(: result-parser (Parser Any))
 (define result-parser
   (xml-parser (result ((name values) (score string->cash)) #:action (list name score))))
 
-#;(module+ test
+(module+ test
   (check-equal? (result-parser (result-writer (list "Hello" 100))) (list "Hello" 100))
   
   (define sc `(("c" 200) ("a" 100)))
@@ -337,7 +297,7 @@
     (field (name ""))))
 
 ;; ---------------------------------------------------------------------------------------------------
-#;(module+ test
+(module+ test
   (define remote-service%
     (class/remote 
      

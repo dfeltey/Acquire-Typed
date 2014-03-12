@@ -6,7 +6,7 @@
 (require "admin-intf.rkt") 
 
 (admin& administrator% turn% DONE EXHAUSTED SCORE)
-(provide Player% Turn% Administrator%)
+
 ;; ---------------------------------------------------------------------------------------------------
 
 (require "typed-wrapper.rkt" "tree.rkt")
@@ -18,8 +18,6 @@
   (Class 
    (init-field [name String]
                [choice Strategy])
-   #;(field [*players (Listof Player)]
-          [*bad (Listof Player)])
    [go ((Instance Administrator%) -> Any)]
    [setup (State -> Any)]
    [take-turn ((Instance Turn-Player%) -> (Values (Option Tile)
@@ -127,7 +125,7 @@
             (failure state states (lambda (s) (loop s  (- n 1) states))))])))
     
     (: failure (State (Listof State) ((Instance ATree%) -> (Values Symbol Any (Listof State))) -> ((List Any Any) -> (Values Symbol Any (Listof State)))))
-    (define/private ((failure state states continue) status)
+    (define/private ((failure state states continue) status) 
       ;; this should be a logging action
       (log status `(turn failure  ,(player-name (state-current-player state))))
       (define state/eliminate (state-remove-current-player state))
@@ -151,11 +149,11 @@
     (define/private (inform-all tree state k)
       (define eliminate
         (for/fold:  : (Listof Player) ((throw-out : (Listof Player) '())) ((p (state-players state)))
-          (in-sandbox-1 (lambda () (send (cast (player-external p) (Instance Player%)) inform state))
+          (cast (in-sandbox (lambda () (send (cast (player-external p) (Instance Player%)) inform state))
                       (lambda (_) throw-out)
-                      (lambda: ([status : (List Any Any)])
-                        (log status `(inform ,(player-name p)))
-                        (cons p throw-out)))))
+                      (lambda (status)
+                        (log (cast status (List Any Any)) `(inform ,(player-name p)))
+                        (cons p throw-out))) (Listof Player))))
       (cond
         [(empty? eliminate) (k tree state)]
         [else (define state/eliminate (state-eliminate state eliminate))
@@ -189,11 +187,11 @@
     (define/private (setup-all players state)
       (define misbehaving
         (for/fold: : (Listof Player) ((misbehaving : (Listof Player) '())) ((p players))
-          (in-sandbox-1 (lambda () (send (cast (player-external p) (Instance Player%)) setup state))
-                        (lambda (_) misbehaving)
-                        (lambda: ([status : (List Any Any)])
-                          (log status `(setup ,(player-name p)))
-                          (cons p misbehaving))) ))
+          (cast (in-sandbox (lambda () (send (cast (player-external p) (Instance Player%)) setup state))
+                      (lambda (_) misbehaving)
+                      (lambda (status)
+                        (log (cast status (List Any Any)) `(setup ,(player-name p)))
+                        (cons p misbehaving))) (Listof Player))))
       (if (empty? misbehaving) state (state-eliminate state misbehaving)))
     
     ;; State -> Void 
@@ -202,10 +200,10 @@
     (define/private (finish state)
       (define score (state-score state))
       (for: ((e : Player (state-players state)))
-        (in-sandbox-1 (lambda () (send (cast (player-external e) (Instance Player%)) the-end state score)) 
+        (in-sandbox (lambda () (send (cast (player-external e) (Instance Player%)) the-end state score)) 
                     void
-                    (lambda: ([status : (List Any Any)])
-                      (log status `(end game ,(player-name e)))))))
+                    (lambda (status)
+                      (log (cast status (List Any Any)) `(end game ,(player-name e)))))))
     ))
 
 (define DONE 'done)
@@ -308,18 +306,18 @@
           (unless (empty? players)
             (: p Player)
             (define p (first players))
-            (in-sandbox-1 
+            (in-sandbox 
              (lambda () 
                (define ex (player-external p))
                (if (boolean? ex)
                    ;; accommodate fake players, and say that they always keep all shares 
                    (map (lambda (_) #t) acquired-hotels)
                    (send (cast ex (Instance Player%)) keep acquired-hotels)))
-             (lambda: ([p-s-decisions : (Listof Boolean)])
-               (set! *decisions (cons (list p ((inst map (List Hotel Boolean) Hotel Boolean) (lambda: ([x : Hotel] [y : Boolean]) (list x y)) acquired-hotels p-s-decisions)) *decisions))
+             (lambda (p-s-decisions)
+               (set! *decisions (cons (list p ((inst map (List Hotel Boolean) Hotel Boolean) (lambda: ([x : Hotel] [y : Boolean]) (list x y)) acquired-hotels (cast p-s-decisions (Listof Boolean)))) *decisions))
                (keep-to-all (rest players)))
-             (lambda: ([status : (List Any Any)])
-               (log status `(keep failure ,(player-name p)))
+             (lambda (status)
+               (log (cast status (List Any Any)) `(keep failure ,(player-name p)))
                (set! *eliminated (cons p *eliminated))
                (keep-to-all (rest players))))))
         
