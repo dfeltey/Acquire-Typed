@@ -190,7 +190,9 @@ HandOut:
     (init-field lplaced)
     
     (define/override (next tile hotel decisions shares-to-buy pick-tile) 
+      (printf "in lplaced% next\n")
       (define intermediate (send (lookup-purchase tile hotel) purchase decisions shares-to-buy))
+      (printf "lplaced% intermediate successful\n")
       (send this lookup-tile pick-tile (assert intermediate list?)))
     
     ;; Tile [Maybe Hotel] -> Placed 
@@ -206,11 +208,20 @@ HandOut:
       )
     
     (define/override (lookup-tile pick-tile lo-hand-out)
+      (printf "in lookup-tile\n")
       (define tile (pick-tile (map hand-out-tile lo-hand-out)))
+      (printf "tile defined ok\n")
       #;(define st (for/first: : (Option State) ((p lo-hand-out) #:when (equal? (hand-out-tile p) tile)) (hand-out-tree p)))
-      (define st (let ([lst (filter (lambda: ([p : HandOut]) (equal? (hand-out-tile p) tile)) lo-hand-out)])
+      #;(define st (let ([lst (filter (lambda: ([p : HandOut]) (equal? (hand-out-tile p) tile)) lo-hand-out)])
                    (and (not (empty? lst))
                         (hand-out-tree (first lst)))))
+      (define st 
+        (let: loop : (Option (Instance ATree%)) ([p : (Listof HandOut) lo-hand-out])
+        (cond
+          [(equal? (hand-out-tile (first p)) tile) (hand-out-tree (first p))]
+          [(empty? p) #f]
+          [else (loop (rest p))])))
+      (printf "st defined ok\n")
       (values tile (assert st)))
     
     (define/override (traversal n policies p?)
@@ -408,6 +419,7 @@ HandOut:
 ;; ASSUME: current player has enough money to buy the desired shares 
 (: tree-next ((Instance LPlaced%) Tile (Option Hotel) (Listof (List Player (Listof (List Hotel Boolean)))) Shares-Order ((Listof Tile) -> Tile) -> (Values (Option Tile) (U (Instance State%) (Instance LPlaced%)))))
 (define (tree-next current-tree tile hotel decisions shares-to-buy pick-tile)
+  (printf "inside tree-next\n")
   (send current-tree next tile hotel decisions shares-to-buy pick-tile))
 
 (: tree? (Any -> Boolean))

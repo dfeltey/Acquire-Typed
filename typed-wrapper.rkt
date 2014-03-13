@@ -1,3 +1,4 @@
+
 #lang typed/racket
 ;(require racket/provide-syntax)
 
@@ -87,16 +88,16 @@
 (require/typed "Lib/sandbox.rkt"
                        [(in-sandbox in-sandbox-3) 
                                    ((-> Any)
-                                    ((Listof Any) -> (Values Any Any Any)) 
+                                    (Void -> (Values Any Any Any)) 
                                     ((List Any Any) -> (Values Symbol Any (Listof State)))
                                     [#:time Natural] [#:memory Natural] 
                                     -> (Values Symbol Any (Listof State)))]
                        [(in-sandbox in-sandbox-2) 
-                                   ((-> (Values (Option Tile) (Option Hotel) Shares-Order))
-                                    ((Listof Any) -> Any) 
-                                   ((List Any Any) -> (Values Symbol Any (Listof State)))
-                                    [#:time Natural] [#:memory Natural] 
-                                    -> (Values Symbol Any (Listof State)))]
+                        ((-> (Values (Option Tile) (Option Hotel) Shares-Order))
+                         ((Option Tile) (Option Hotel) Shares-Order -> (Values Any Any Any)) 
+                         ((List Any Any) -> (Values Symbol Any (Listof State)))
+                         [#:time Natural] [#:memory Natural] 
+                         -> (Values Symbol Any (Listof State)))]
                        [(in-sandbox in-sandbox-1) 
                         (All (a b c)
                              ((-> a)
