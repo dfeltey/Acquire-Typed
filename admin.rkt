@@ -10,6 +10,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (require "typed-wrapper.rkt" "tree.rkt")
+(require/typed/provide "player0-apply-wrapper.rkt"
+                       [build-player0 (String (Listof Tile) (List Any (Instance Player%)) -> Player)])
 
 #;(module+ test 
     (require rackunit (submod "state.rkt" sample-states) (submod "board.rkt" tiles+spots)))

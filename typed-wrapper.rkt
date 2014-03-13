@@ -47,7 +47,8 @@
                        [state-score (State -> Score)]
                        [state0 (Player * -> State)]
                        [player0 (case-> (String Tile Tile Tile Tile Tile Tile -> Player)
-                                        (String Tile Tile Tile Tile Tile Tile Any -> Player))]
+                                        (String Tile Tile Tile Tile Tile Tile Any -> Player)
+                                        (String Tile * -> Player))]
                        [state-eliminate (State (Listof Player) -> State)]
                        [player-name (Player -> String)]
                        [player-external (Player -> Any)]
@@ -74,8 +75,7 @@
                        )
 
 
-(require/typed/provide "player0-apply-wrapper.rkt"
-                       [build-player0 (String (Listof Tile) (Pairof Any Any) -> Player)])
+
 
 (require/typed/provide "Lib/log.rkt"
                        [log ((List Any Any) Any -> Any)])
@@ -100,7 +100,7 @@
                        [(in-sandbox in-sandbox-1) 
                         (All (a b c)
                              ((-> a)
-                              (b -> c) ; not quite right, consumer can take any number of args?
+                              (a -> c) ; not quite right, consumer can take any number of args?
                               ((List Any Any) -> c)
                               [#:time Natural]
                               [#:memory Natural]

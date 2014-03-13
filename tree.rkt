@@ -118,6 +118,12 @@ HandOut:
          [traversal (Natural Policies ((Instance Placed%) -> Natural) -> Natural)]
          [lookup-tile  (((Listof Tile) -> Tile) (Listof HandOut) -> (Values (Option Tile) (Instance ATree%)))]))
 
+(define-type State%
+  (Class #:implements ATree%
+         #:implements Tree<%>
+         (init-field [state State])))
+  
+
 (: atree% ATree%)
 (define atree% 
   (class object% 
@@ -158,11 +164,6 @@ HandOut:
     ))
 
 
-(define-type State%
-  (Class #:implements ATree%
-         #:implements Tree<%>
-         (init-field [state State])))
-  
 (: state% State%)
 (define state% 
   (class atree%
@@ -230,7 +231,7 @@ HandOut:
   (Class 
    (init-field [state State]
                [tile Tile]
-               [hotel Hotel]
+               [hotel (Option Hotel)]
                [state/tile State]
                [reason Symbol])
    [purchase (Decisions Shares-Order -> (U (Listof HandOut) (Instance State%)))]
@@ -287,7 +288,7 @@ HandOut:
         p))))
 
 (: placed-tile ((Instance Placed%) -> Tile))
-(: placed-hotel ((Instance Placed%) -> Hotel))
+(: placed-hotel ((Instance Placed%) -> (Option Hotel)))
 (define (placed-tile p) (get-field tile p))
 (define (placed-hotel p) (get-field hotel p))
 
@@ -314,7 +315,7 @@ HandOut:
                 (for/list: : (Listof (Instance Placed%)) ((h hotels))
                   (define state/tile 
                     (if h (state-place-tile state t h) (state-place-tile state t)))
-                  (new placed% [state state][tile t][hotel (assert h)][state/tile state/tile][reason kind])))
+                  (new placed% [state state][tile t][hotel h] [state/tile state/tile][reason kind])))
               (append new-placements lo-placed)))
           (new lplaced% (state state) (lplaced lplaced))]))
 
