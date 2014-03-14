@@ -10,7 +10,7 @@
 ;; a factory for creating lists of random and ordered players plus players with specific problems
 
 (require (only-in "player.rkt" player?) #;"admin-intf.rkt")
-(require (only-in "admin.rkt" Player% Administrator%))
+;(require (only-in "admin.rkt" Player% Administrator%))
 (require (except-in "typed-wrapper.rkt" player?))
 (provide 
  ;(contract-out 
@@ -76,9 +76,9 @@
 
 (define-type Base% 
   (Class #:implements Player%
-         (init-field [name String #:optional]
-                     [choice Strategy #:optional])))
-  
+         (init-field  [choice Strategy #:optional]
+                      [name String #:optional])))
+
 (: base% Base%)  
 (define base% 
   (class object% 

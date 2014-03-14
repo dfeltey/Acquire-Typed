@@ -6,7 +6,7 @@
 (require "admin-intf.rkt") 
 
 (admin& administrator% turn% DONE EXHAUSTED SCORE)
-(provide Player% Turn% Administrator%)
+;(provide Player% Turn% Administrator%)
 ;; ---------------------------------------------------------------------------------------------------
 
 (require "typed-wrapper.rkt" "tree.rkt")
@@ -16,28 +16,7 @@
 #;(module+ test 
     (require rackunit (submod "state.rkt" sample-states) (submod "board.rkt" tiles+spots)))
 
-(define-type Player%
-  (Class 
-   (init-field [name String]
-               [choice Strategy])
-   #;(field [*players (Listof Player)]
-          [*bad (Listof Player)])
-   [go ((Instance Administrator%) -> Any)]
-   [setup (State -> Any)]
-   [take-turn ((Instance Turn-Player%) -> (Values (Option Tile)
-                                                  (Option Hotel)
-                                                  Shares-Order))]
-   [keep ((Listof Hotel) -> (Listof Boolean))]
-   [receive-tile (Tile -> Any)]
-   [inform [State -> Any]]
-   [the-end (State Score -> Any)]))
 
-(define-type Administrator%
-  (Class
-   (init-field [next-tile ((Listof Tile) -> Tile)])
-   [sign-up (String (Instance Player%) -> String)]
-   [show-players (-> (Listof String))]
-   [run (Natural [#:show (Natural State -> Any)] -> (Values Symbol Any (Listof State)))]))
    
 (: administrator% Administrator%)
 (define administrator%
@@ -67,7 +46,7 @@
       (define tree0 (generate-tree (setup-all players (apply state0 players))))
       ;; generative recursion: n to 0, but terminate before if final state is reached
       ;; accumulator: states is reverese list of states encountered since tile distribution 
-      (let: loop : (Values Symbol Any (Listof State)) ([tree tree0][n : Natural turns#][states (list (tree-state tree0))])
+      (let: loop : (values Symbol Any (Listof State)) ([tree tree0][n : Natural turns#][states (list (tree-state tree0))])
         (define state (tree-state tree))
         (cond
           [(= n 0)
@@ -79,17 +58,15 @@
            (values SCORE (state-score state) (reverse states))]
           [else 
            (: external (Instance Player%))
-           (define external (cast (player-external (state-current-player state)) (Instance Player%)))
+           (define external (player-external (state-current-player state)))
            (show n state)
            (define turn (new turn% [current-state state]))
-           (begin0 
+           
              (in-sandbox-2
             #:time (* (+ (length (state-players state)) 1) 3)
             (lambda () (send external take-turn turn))
             ;; success
             (lambda: ([tile : (Option Tile)] [hotel-involved : (Option Hotel)] [buy-shares : Shares-Order])
-              (printf "in lambda\n")
-              (begin0 
                 (cond
                 [(boolean? tile)
                  (finish state)
@@ -116,10 +93,8 @@
                          (if (empty? eliminate)
                              tree
                              (generate-tree (state-eliminate state eliminate))))
-                       (printf "in exec\n")
-                       (exec external (cast tree/eliminate (Instance LPlaced%)) tile hotel-involved d* buy-shares
+                       (exec external tree/eliminate #;(cast tree/eliminate (Instance LPlaced%)) tile hotel-involved d* buy-shares
                              (lambda: ([next-tree : (Instance ATree%)] [state : State])
-                               (printf "in exec succ\n")
                                (inform-all 
                                 next-tree state
                                 (lambda: ([next-tree : (Instance ATree%)] [state : State])
@@ -129,56 +104,43 @@
                                      (values EXHAUSTED (state-score state) (reverse states))]
                                     [else (loop next-tree (- n 1) (cons state states))]))))
                              ;; failure 
-                             (begin (printf "in exec n = ~a\n" n) (failure state states (lambda (s) (loop s  (- n 1) states)))))])])])
-                (printf "out of lambda\n")))
+                             (failure state states (lambda (s) (loop s  (- n 1) states))))])])]))
             ;; failure: 
-            (begin (printf " sandbox f n = ~a\n" n) (failure state states (lambda (s) (loop s  (- n 1) states)))))
-             (printf "out of sandbox\n"))])))
+            (failure state states (lambda (s) (loop s  (- n 1) states))))])))
     
     (: failure (State (Listof State) ((Instance ATree%) -> (Values Symbol Any (Listof State))) -> ((List Any Any) -> (Values Symbol Any (Listof State)))))
-    (define/private (failure state states continue) 
-      (printf "in failure\n")
-      (lambda (status)
-        (printf "call failure\n")
-        ;; this should be a logging action
-        (log status `(turn failure  ,(player-name (state-current-player state))))
-        (printf "log successful\n")
-        (define state/eliminate (state-remove-current-player state))
-        (printf "remove successful\n")
-        (begin0 (if (empty? (state-players state/eliminate))
-                    (begin (printf "fail returns value\n") (values EXHAUSTED '(all players failed) (reverse states)))
-                    (continue (begin (printf "in gen-tree ") (begin0 (generate-tree state/eliminate) (printf "out gen-tree\n"))))) 
-                (printf "out of failure\n"))))
+    (define/private ((failure state states continue) status)
+      ;; this should be a logging action
+      (log status `(turn failure  ,(player-name (state-current-player state))))
+      (define state/eliminate (state-remove-current-player state))
+      (if (empty? (state-players state/eliminate))
+          (values EXHAUSTED '(all players failed) (reverse states))
+          (continue (generate-tree state/eliminate))))
     
     ;; [ (cons Tile [Listof Tile]) -> Tile ] -> Tree Tile [Maybe Hotel] Decisions [Listof Hotel]
     ;; (Any -> Any) -- success continuation 
     ;; (Any -> Any) -- failure continuation 
     ;; -> Tree
-    (: exec : (Instance Player%) (Instance LPlaced%) Tile (Option Hotel) Decisions Shares-Order ((Instance ATree%) State -> (Values Any Any Any)) ((List Any Any) -> (Values Symbol Any (Listof State))) -> (Values Symbol Any (Listof State)))
+    (: exec : (Instance Player%) (Instance State%) Tile (Option Hotel) Decisions Shares-Order ((Instance ATree%) State -> (Values Any Any Any)) ((List Any Any) -> (Values Symbol Any (Listof State))) -> (Values Symbol Any (Listof State)))
     (define/private (exec external tree0 placement hotel decisions shares-to-buy succ fail)
-      (printf "evaluating exec call\n")
       (define-values (tile tree) (tree-next tree0 placement hotel decisions shares-to-buy next-tile))
-      (printf "tile tree vaules defined ok\n")
-      (in-sandbox-3 (lambda () (begin0 (send external receive-tile (assert tile)) (printf "receive-tile call ok\n")))
-                  (lambda (_) (printf "call success k\n") (succ tree (begin0 (tree-state tree) (printf "should enter succ\n"))))
-                  (lambda (_) (printf "call fail k\n") (fail _))))
+      (in-sandbox-3 (lambda () (send external receive-tile (assert tile)))
+                    (lambda (_)  (succ tree (begin0 (tree-state tree))))
+                    fail))
     
     ;; State (Tree State -> Any)  -> Any 
     (: inform-all ((Instance ATree%) State ((Instance ATree%) State -> (Values Any Any Any)) -> (Values Any Any Any)))
     (define/private (inform-all tree state k)
-      (printf "in inform-all")
       (define eliminate
         (for/fold:  : (Listof Player) ((throw-out : (Listof Player) '())) ((p (state-players state)))
-          (in-sandbox-1 (lambda () (send (cast (player-external p) (Instance Player%)) inform state))
+          (in-sandbox-1 (lambda () (send (player-external p) inform state))
                       (lambda (_) throw-out)
                       (lambda: ([status : (List Any Any)])
                         (log status `(inform ,(player-name p)))
                         (cons p throw-out)))))
-      (printf "eliminate defined\n")
       (cond
-        [(empty? eliminate) (printf "eliminate empty\n") (k tree state)]
+        [(empty? eliminate) (k tree state)]
         [else 
-         (printf "eliminate else\n")
          (define state/eliminate (state-eliminate state eliminate))
               (k (generate-tree state/eliminate) state/eliminate)]))
     
@@ -210,7 +172,7 @@
     (define/private (setup-all players state)
       (define misbehaving
         (for/fold: : (Listof Player) ((misbehaving : (Listof Player) '())) ((p players))
-          (in-sandbox-1 (lambda () (send (cast (player-external p) (Instance Player%)) setup state))
+          (in-sandbox-1 (lambda () (send (player-external p) setup state))
                         (lambda (_) misbehaving)
                         (lambda: ([status : (List Any Any)])
                           (log status `(setup ,(player-name p)))
@@ -223,7 +185,7 @@
     (define/private (finish state)
       (define score (state-score state))
       (for: ((e : Player (state-players state)))
-        (in-sandbox-1 (lambda () (send (cast (player-external e) (Instance Player%)) the-end state score)) 
+        (in-sandbox-1 (lambda () (send (player-external e) the-end state score)) 
                     void
                     (lambda: ([status : (List Any Any)])
                       (log status `(end game ,(player-name e)))))))
@@ -335,7 +297,7 @@
                (if (boolean? ex)
                    ;; accommodate fake players, and say that they always keep all shares 
                    (map (lambda (_) #t) acquired-hotels)
-                   (send (cast ex (Instance Player%)) keep acquired-hotels)))
+                   (send ex keep acquired-hotels)))
              (lambda: ([p-s-decisions : (Listof Boolean)])
                (set! *decisions (cons (list p ((inst map (List Hotel Boolean) Hotel Boolean) (lambda: ([x : Hotel] [y : Boolean]) (list x y)) acquired-hotels p-s-decisions)) *decisions))
                (keep-to-all (rest players)))

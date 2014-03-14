@@ -13,7 +13,7 @@
  tree-state tree-next
  tree-founding tree-merging)
 
-(provide ATree% LPlaced% Decisions)
+(provide ATree% LPlaced% Decisions State%)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; IMPLEMENTATION
@@ -180,9 +180,10 @@ HandOut:
 (define-type LPlaced%
   (Class #:implements ATree%
          #:implements Tree<%>
-         (init-field [state State]
-                     [lplaced (Listof (Instance Placed%))])))
-  
+         #:implements State%
+         (init-field  [lplaced (Listof (Instance Placed%))]
+                      [state State])))
+
 (: lplaced% LPlaced%)  
 (define lplaced%
   (class atree% 
@@ -190,9 +191,7 @@ HandOut:
     (init-field lplaced)
     
     (define/override (next tile hotel decisions shares-to-buy pick-tile) 
-      (printf "in lplaced% next\n")
       (define intermediate (send (lookup-purchase tile hotel) purchase decisions shares-to-buy))
-      (printf "lplaced% intermediate successful\n")
       (send this lookup-tile pick-tile (assert intermediate list?)))
     
     ;; Tile [Maybe Hotel] -> Placed 
@@ -208,20 +207,17 @@ HandOut:
       )
     
     (define/override (lookup-tile pick-tile lo-hand-out)
-      (printf "in lookup-tile\n")
       (define tile (pick-tile (map hand-out-tile lo-hand-out)))
-      (printf "tile defined ok\n")
       #;(define st (for/first: : (Option State) ((p lo-hand-out) #:when (equal? (hand-out-tile p) tile)) (hand-out-tree p)))
       #;(define st (let ([lst (filter (lambda: ([p : HandOut]) (equal? (hand-out-tile p) tile)) lo-hand-out)])
-                   (and (not (empty? lst))
-                        (hand-out-tree (first lst)))))
+                     (and (not (empty? lst))
+                          (hand-out-tree (first lst)))))
       (define st 
         (let: loop : (Option (Instance ATree%)) ([p : (Listof HandOut) lo-hand-out])
-        (cond
-          [(equal? (hand-out-tile (first p)) tile) (hand-out-tree (first p))]
-          [(empty? p) #f]
-          [else (loop (rest p))])))
-      (printf "st defined ok\n")
+          (cond
+            [(equal? (hand-out-tile (first p)) tile) (hand-out-tree (first p))]
+            [(empty? p) #f]
+            [else (loop (rest p))])))
       (values tile (assert st)))
     
     (define/override (traversal n policies p?)
@@ -240,11 +236,11 @@ HandOut:
 (define-type Decisions (Listof (List Player (Listof (List Hotel Boolean)))))
 (define-type Placed%
   (Class 
-   (init-field [state State]
-               [tile Tile]
-               [hotel (Option Hotel)]
+   (init-field [reason Symbol]
                [state/tile State]
-               [reason Symbol])
+               [hotel (Option Hotel)]
+               [tile Tile]
+               [state State])
    [purchase (Decisions Shares-Order -> (U (Listof HandOut) (Instance State%)))]
    [to-trees (Decisions Shares-Order -> (Listof (Instance ATree%)))]
    [acceptable-policies ((Listof Shares-Order) -> (Listof Shares-Order))]))
@@ -294,7 +290,7 @@ HandOut:
       (define budget (player-money (state-current-player state)))
       (define board  (state-board state))
       (define shares (state-shares state))
-      (for/list ((p policies) 
+      (for/list: : (Listof Shares-Order) ((p policies) 
                  #:when (and (shares-available? shares p) (affordable? board p budget)))
         p))))
 
@@ -305,7 +301,7 @@ HandOut:
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; tree generation 
-(: generate-tree (State -> (Instance ATree%)))
+(: generate-tree (State -> (Instance State%)))
 (define (generate-tree state)
   (cond
     [(state-final? state) (new state% [state state])]
@@ -417,9 +413,8 @@ HandOut:
 ;; tree navigation: game administrator side 
 
 ;; ASSUME: current player has enough money to buy the desired shares 
-(: tree-next ((Instance LPlaced%) Tile (Option Hotel) (Listof (List Player (Listof (List Hotel Boolean)))) Shares-Order ((Listof Tile) -> Tile) -> (Values (Option Tile) (U (Instance State%) (Instance LPlaced%)))))
+(: tree-next ((Instance State%) Tile (Option Hotel) (Listof (List Player (Listof (List Hotel Boolean)))) Shares-Order ((Listof Tile) -> Tile) -> (Values (Option Tile) (U (Instance State%) (Instance LPlaced%)))))
 (define (tree-next current-tree tile hotel decisions shares-to-buy pick-tile)
-  (printf "inside tree-next\n")
   (send current-tree next tile hotel decisions shares-to-buy pick-tile))
 
 (: tree? (Any -> Boolean))

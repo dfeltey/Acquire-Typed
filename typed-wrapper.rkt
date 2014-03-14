@@ -52,7 +52,7 @@
                                         (String Tile * -> Player))]
                        [state-eliminate (State (Listof Player) -> State)]
                        [player-name (Player -> String)]
-                       [player-external (Player -> Any)]
+                       [player-external (Player -> (Instance Player%))]
                        [state-remove-current-player (State -> State)]
                        [state-players (State -> (Listof Player))]
                        [state-return-shares (case-> (State (Listof (List Player (Listof (List Hotel Boolean)))) -> State)
@@ -113,7 +113,30 @@
                        )
 
 
-(provide in-sandbox-3 in-sandbox-2 in-sandbox-1 in-sandbox)
+(provide in-sandbox-3 in-sandbox-2 in-sandbox-1 in-sandbox Player% Administrator%)
+
+(define-type Player%
+  (Class 
+   (init-field [choice Strategy]
+               [name String])
+   #;(field [*players (Listof Player)]
+          [*bad (Listof Player)])
+   [go ((Instance Administrator%) -> Any)]
+   [setup (State -> Any)]
+   [take-turn ((Instance Turn-Player%) -> (Values (Option Tile)
+                                                  (Option Hotel)
+                                                  Shares-Order))]
+   [keep ((Listof Hotel) -> (Listof Boolean))]
+   [receive-tile (Tile -> Any)]
+   [inform [State -> Any]]
+   [the-end (State Score -> Any)]))
+
+(define-type Administrator%
+  (Class
+   (init-field [next-tile ((Listof Tile) -> Tile)])
+   [sign-up (String (Instance Player%) -> String)]
+   [show-players (-> (Listof String))]
+   [run (Natural [#:show (Natural State -> Any)] -> (Values Symbol Any (Listof State)))]))
 
 
 (provide Score Turn-Player% Turn-Administrator% Strategy)

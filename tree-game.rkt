@@ -17,16 +17,16 @@ exec racket -tm "$0" ${1+"$@"}
 ;; IMPLEMENTATION
 
 (require "admin.rkt" "state.rkt" "player-factory.rkt" "Lib/auxiliaries.rkt")
+;(require feature-profile)
 
 #;(module+ test (require rackunit))
 
 (define (main n)
-  (for ((i (in-range (string->number n))))
-    (go (inf-loop-player 0))))
+   (for ((i (in-range (string->number n))))
+     (go (inf-loop-player 0))))
 
 (define (go extra)
-  ;(define p1 (random-players 5))
-  (define p1 (random-players 1))
+  (define p1 (random-players 5))
   (define p (cons extra p1))
   (define-values (two-status _score two-run) #;(run p 99 #:choice randomly-pick)
     (run p 99 #:show void #:choice randomly-pick))
