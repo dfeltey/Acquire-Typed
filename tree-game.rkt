@@ -16,6 +16,8 @@ exec racket -tm "$0" ${1+"$@"}
 ;; ---------------------------------------------------------------------------------------------------
 ;; IMPLEMENTATION
 
+(random-seed 5)
+
 (require "admin.rkt" "state.rkt" "player-factory.rkt" "Lib/auxiliaries.rkt")
 ;(require feature-profile)
 
