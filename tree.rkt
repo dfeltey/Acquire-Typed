@@ -236,11 +236,11 @@ HandOut:
 (define-type Decisions (Listof (List Player (Listof (List Hotel Boolean)))))
 (define-type Placed%
   (Class 
-   (init-field [reason Symbol]
-               [state/tile State]
-               [hotel (Option Hotel)]
+   (init-field [state State]
                [tile Tile]
-               [state State])
+               [hotel (Option Hotel)]
+               [state/tile State]
+               [reason Symbol]y)
    [purchase (Decisions Shares-Order -> (U (Listof HandOut) (Instance State%)))]
    [to-trees (Decisions Shares-Order -> (Listof (Instance ATree%)))]
    [acceptable-policies ((Listof Shares-Order) -> (Listof Shares-Order))]))
