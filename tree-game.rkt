@@ -74,3 +74,6 @@ exec racket -tm "$0" ${1+"$@"}
   (go (inform-bad-player))
   (go (setup-bad-player))
   (go (inf-loop-player 1)))
+
+(module+ main
+  (time (main "1")))

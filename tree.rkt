@@ -240,7 +240,7 @@ HandOut:
                [tile Tile]
                [hotel (Option Hotel)]
                [state/tile State]
-               [reason Symbol]y)
+               [reason Symbol])
    [purchase (Decisions Shares-Order -> (U (Listof HandOut) (Instance State%)))]
    [to-trees (Decisions Shares-Order -> (Listof (Instance ATree%)))]
    [acceptable-policies ((Listof Shares-Order) -> (Listof Shares-Order))]))

@@ -83,8 +83,8 @@
 (define base% 
   (class object% 
     (init-field 
-     (name "diverges on inform") 
-     (choice ordered-s))
+     (choice ordered-s)
+     (name "diverges on inform"))
     (super-new)
     
     (define/public (go a) (send a sign-up name this))

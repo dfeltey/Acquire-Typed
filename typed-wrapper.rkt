@@ -117,8 +117,8 @@
 
 (define-type Player%
   (Class 
-   (init-field [choice Strategy]
-               [name String])
+   (init-field [name String]
+               [choice Strategy])
    #;(field [*players (Listof Player)]
           [*bad (Listof Player)])
    [go ((Instance Administrator%) -> Any)]

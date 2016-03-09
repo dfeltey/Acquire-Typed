@@ -1,7 +1,6 @@
 #lang racket
 
 (provide
- ;; from unstable/contract
  maybe/c
  
  ;; SYNTAX
@@ -36,7 +35,9 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; implementation 
 
-(require unstable/contract (for-syntax "../Performance/with-contract.rkt"))
+(require (for-syntax "../Performance/with-contract.rkt"))
+
+(define (maybe/c c) (or/c c #f))
 
 (define-syntax (interface stx)
   (syntax-case stx (subject-to)
