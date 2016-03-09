@@ -1,1 +1,0 @@
-("6.0.0.2" ("10edbcd2f6d41d6011be07ed8d5cc64f6a498c1a" . "7aebf9605f0a11c492b61c3eeddb1eb9e75de3c1") #"/home/dan/research/Acquire-Typed/Lib/auxiliaries.rkt" #"/home/dan/research/Acquire-Typed/Lib/contract.rkt" (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
