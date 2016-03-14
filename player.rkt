@@ -31,6 +31,8 @@
                                 player-name
                                 state-players
                                 player-shares)))
+(require/typed "admin.rkt"
+               [turn% Turn-Player%])
 
 #;(module+ test 
   (require rackunit (submod "board.rkt" tiles+spots)))

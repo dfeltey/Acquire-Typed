@@ -1,4 +1,4 @@
-#lang typed/racket
+#lang typed/racket/no-check
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; the Acquire game administrator class: sign up players and manage their play 
