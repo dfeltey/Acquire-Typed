@@ -116,7 +116,8 @@ HandOut:
   (Class #:implements Tree<%>
          (init-field [state State])
          [traversal (Natural Policies ((Instance Placed%) -> Natural) -> Natural)]
-         [lookup-tile  (((Listof Tile) -> Tile) (Listof HandOut) -> (Values (Option Tile) (Instance ATree%)))]))
+         [lookup-tile  (((Listof Tile) -> Tile) (Listof HandOut) -> (Values (Option Tile) (Instance ATree%)))]
+         [get-lplaced (-> (Listof (Instance Placed%)))]))
 
 (define-type State%
   (Class #:implements ATree%
@@ -129,6 +130,9 @@ HandOut:
   (class object% 
     (init-field state)
     
+    (define/public (get-lplaced)
+      (error "don't do that"))
+
     (super-new)
     
     (define/public (to-state)  
@@ -168,6 +172,9 @@ HandOut:
 (define state% 
   (class atree%
     (super-new)
+
+    (define/override (get-lplaced)
+      (error "don't do that"))
     
     (define/override (next . _) 
       (error 'tree-next "finale state can't transition"))
@@ -189,6 +196,9 @@ HandOut:
   (class atree% 
     (super-new)
     (init-field lplaced)
+
+    (define/override (get-lplaced)
+      lplaced)
     
     (define/override (next tile hotel decisions shares-to-buy pick-tile) 
       (define intermediate (send (lookup-purchase tile hotel) purchase decisions shares-to-buy))
@@ -423,7 +433,7 @@ HandOut:
 
 (: decision-tree? (Any -> Boolean))
 (define (decision-tree? x)
-  (and (is-a? x lplaced%) (cons? (get-field lplaced (cast x (Instance LPlaced%))))))
+  (and (is-a? x lplaced%) (cons? (send (cast x (Instance LPlaced%)) get-lplaced))))
 
 (: tree-state ((U (Instance State%) (Instance LPlaced%)) -> State))
 (define (tree-state t)
